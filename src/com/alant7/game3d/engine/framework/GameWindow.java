@@ -1,70 +1,37 @@
 package com.alant7.game3d.engine.framework;
 
-import com.alant7.game3d.engine.math.Vector2D;
-import com.alant7.game3d.engine.world.GameObject;
-import com.alant7.game3d.engine.world.World;
+import java.awt.Dimension;
+import java.awt.Toolkit;
+import javax.swing.JFrame;
 
-import javax.swing.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+public class GameWindow {
 
-public class GameWindow implements KeyListener {
+	public static Dimension ScreenSize = Toolkit.getDefaultToolkit().getScreenSize();
+	public static GameWindow Instance;
 
-    public Graphics Graphics;
+	public GameWindow() {
+		Instance = this;
+	}
 
-    public static GameWindow INSTANCE;
+	Runnable WhenReady = null;
+	public GameWindow WhenReady(Runnable r) {
+		this.WhenReady = r;
+		return this;
+	}
 
-    public JFrame Frame;
+	public void Create() {
 
-    public GameWindow(String Title, int Width, int Height) {
-        Frame = new JFrame();
-        Frame.setSize(Width, Height);
-        Frame.setTitle(Title);
+		JFrame F = new JFrame();
 
-        Graphics = new Graphics();
-        Frame.add(Graphics);
+		F.setUndecorated(true);
+		F.setSize(ScreenSize);
 
-        Frame.setVisible(true);
-        Frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		Graphics Graphics = new Graphics();
+		F.add(Graphics);
 
-        new Thread(this::GameLoop).start();
+		F.setVisible(true);
+		F.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        Graphics.addKeyListener(this);
+	}
 
-        INSTANCE = this;
-    }
-
-    private void GameLoop() {
-
-        while (true) {
-
-            Graphics.Render();
-
-            try {
-                Thread.sleep(16);
-            } catch (Exception e) {}
-
-        }
-
-    }
-
-    @Override
-    public void keyTyped(KeyEvent e) {
-
-    }
-
-    @Override
-    public void keyPressed(KeyEvent e) {
-        switch (e.getKeyChar()) {
-            case 'a':
-                for (int i = 0; i < World.Objects.size(); i++)
-                    World.Objects.get(i).Rotate(new Vector2D(), new Vector2D(1, 0));
-                break;
-        }
-    }
-
-    @Override
-    public void keyReleased(KeyEvent e) {
-
-    }
 }
