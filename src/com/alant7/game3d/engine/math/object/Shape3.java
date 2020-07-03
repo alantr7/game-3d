@@ -3,8 +3,6 @@ package com.alant7.game3d.engine.math.object;
 import com.alant7.game3d.engine.framework.GameWindow;
 import com.alant7.game3d.engine.framework.Graphics;
 import com.alant7.game3d.engine.math.Calculator;
-import com.alant7.game3d.engine.math.Geometry;
-import com.alant7.game3d.engine.math.Vector2;
 import com.alant7.game3d.engine.math.Vector3;
 
 import java.awt.Color;
@@ -21,32 +19,47 @@ public class Shape3 {
 		this.c = c;
 	}
 
-	public void Rotate(Vector2 R, Vector2 O) {
-
-		for (Vector3 v : Point) {
-			double[] rotx = Geometry.RotateAround(new Vector2 (v.x, v.z), new double[] {O.x, O.y}, new double[] {R.x, R.y});
-			double[] roty = Geometry.RotateAround(new Vector2 (rotx[1], v.y), new double[] {O.x, O.y}, new double[] {R.x, R.y});
-
-			v.x = (int)rotx[0];
-			v.y = (int)roty[1];
-			v.z = (int)roty[0];
-		}
-
-	}
-
 	public Shape2 Project() {
 		newX = new double[Point.length];
 		newY = new double[Point.length];
 
 		boolean Visible = true;
 
-		for(int i=0; i < Point.length; i++) {
+		for(int i = 0; i < Point.length; i++) {
+
+			if (Graphics.PROJECTED_VECTOR_CACHE.containsKey(Point[i])) {
+
+				double[] p = Graphics.PROJECTED_VECTOR_CACHE.get(Point[i]);
+
+				if (p == null) {
+					Visible = false;
+					continue;
+				}
+
+				newX[i] = p[0];
+				newY[i] = p[1];
+
+				continue;
+
+			}
+
 			CalcPos = Calculator.CalculatePositionP(Graphics.ViewFrom, Graphics.ViewTo, Point[i].z, Point[i].x, Point[i].y);
 			newX[i] = (GameWindow.ScreenSize.getWidth()/2 - Calculator.CalcFocusPos[0]) + CalcPos[0] * Graphics.zoom;
 			newY[i] = (GameWindow.ScreenSize.getHeight()/2 - Calculator.CalcFocusPos[1]) + CalcPos[1] * Graphics.zoom;
 
-			if (Calculator.t < 0)
+			Graphics.VECTORS_CALCULATED++;
+
+			if (Calculator.t < 0) {
 				Visible = false;
+				Graphics.PROJECTED_VECTOR_CACHE.put (Point[i], null);
+
+				continue;
+			}
+
+			Graphics.PROJECTED_VECTOR_CACHE.put (Point[i], new double[] {
+					newX[i], newY[i]
+			});
+
 		}
 
 		DrawablePolygon = new Shape2(newX, newY, c, GetDist());

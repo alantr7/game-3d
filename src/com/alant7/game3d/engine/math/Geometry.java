@@ -71,9 +71,9 @@ public class Geometry {
 
     }
 
-    public static double[] RotateAround (Vector2 R, double[] P, double[] O) {
-        double X = Math.cos(R.x) * (P[0] - O[0]) - Math.sin(R.x) * (P[1] - O[1]) + O[0];
-        double Y = Math.sin(R.y) * (P[0] - O[0]) + Math.cos(R.y) * (P[1] - O[1]) + O[1];
+    public static double[] RotateAround (double Angle, double[] P, double[] O) {
+        double X = Math.cos(Angle) * (P[0] - O[0]) - Math.sin(Angle) * (P[1] - O[1]) + O[0];
+        double Y = Math.sin(Angle) * (P[0] - O[0]) + Math.cos(Angle) * (P[1] - O[1]) + O[1];
 
         return new double[] {
                 X, Y

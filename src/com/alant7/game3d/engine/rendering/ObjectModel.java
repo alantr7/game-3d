@@ -13,8 +13,7 @@ public class ObjectModel {
 
     public ObjectModel (Shape3[]... shapes) {
 
-        for (Shape3[] shs : shapes)
-            Shapes.addAll(Arrays.asList(shs));
+        for (Shape3[] shs : shapes) Shapes.addAll(Arrays.asList(shs));
 
     }
 

@@ -2,10 +2,16 @@ package com.alant7.game3d.engine.framework;
 
 import com.alant7.game3d.engine.math.*;
 import com.alant7.game3d.engine.math.object.Shape2;
+import com.alant7.game3d.engine.rendering.Keyframe;
+import com.alant7.game3d.engine.rendering.ObjectAnimation;
 import com.alant7.game3d.engine.rendering.ObjectModel;
 import com.alant7.game3d.engine.world.GameObject;
 import com.alant7.game3d.engine.world.World;
 
+import javax.management.Attribute;
+import javax.management.AttributeList;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -16,36 +22,34 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class Graphics extends Canvas implements KeyListener, MouseListener, MouseMotionListener, MouseWheelListener{
 	
-	//ArrayList of all the 3D polygons - each 3D polygon has a 2D 'alant7.game3d.engine.math.object.PolygonObject' inside called 'DrawablePolygon'
+	// Sorted polygons
 	public static ArrayList<Shape2> Sorted = new ArrayList<>();
 
-	//Used for keeping mouse in center
+	// Used for keeping mouse in center
 	Robot r;
 
-	public static double[] ViewFrom = new double[] { 10, 15, 5},
-					ViewTo = new double[] {0, 0, 0},
-					LightDir = new double[] {1, 1, 1};
-	
-	//The smaller the zoom the more zoomed out you are and visa versa, although altering too far from 1000 will make it look pretty weird
+	// Camera variables. Will be moved to their own class
+	public static double[] ViewFrom = new double[] { 10, 15, 5}, ViewTo = new double[] {0, 0, 0};
 	public static double zoom = 1000, MinZoom = 500, MaxZoom = 2500, MouseX = 0, MouseY = 0, MovementSpeed = 0.5;
-	
-	//FPS is a bit primitive, you can set the MaxFPS as high as u want
-	public double drawFPS = 0, MaxFPS = 60, SleepTime = 1000.0/MaxFPS, LastRefresh = 0, StartTime = System.currentTimeMillis(), LastFPSCheck = 0, Checks = 0;
-	//VertLook goes from 0.999 to -0.999, minus being looking down and + looking up, HorLook takes any number and goes round in radians
-	//aimSight changes the size of the center-cross. The lower HorRotSpeed or VertRotSpeed, the faster the camera will rotate in those directions
-	public double VertLook = -0.4, HorLook = 3, aimSight = 4, HorRotSpeed = 900, VertRotSpeed = 2200, SunPos = 0;
+	public double VertLook = -0.4, HorLook = 3, HorRotSpeed = 900, VertRotSpeed = 2200;
+
+	// Cache
+	public static HashMap<Vector3, double[]> PROJECTED_VECTOR_CACHE = new HashMap<>();
+
+	// FPS
+	public double drawFPS = 0, MaxFPS = 60;
 
 	//will hold the order that the polygons in the ArrayList alant7.game3d.engine.math.object.DPolygon should be drawn meaning alant7.game3d.engine.math.object.DPolygon.get(NewOrder[0]) gets drawn first
 	int[] NewOrder;
 
 	public static boolean SHOULD_SORT_POLYGONS = true;
 	boolean[] Keys = new boolean[4];
-	
-	long repaintTime = 0;
 	
 	public Graphics() {
 		this.addKeyListener(this);
@@ -60,46 +64,39 @@ public class Graphics extends Canvas implements KeyListener, MouseListener, Mous
 		new Thread(this::GameLoop).start();
 	}
 
-	int avgRender = 0;
+	public static int VECTORS_CALCULATED;
 
+	int avgRender = 0;
 	public void GameLoop() {
 
-		int FRAMES = 0;
+		// FPS COUNTER VARIABLES
+		int FRAMES = 0, RenderTotal = 0;
 		long LastUpdate = 0, MeasureStart = System.currentTimeMillis();
 
-		int RenderTotal = 0;
-
+		// PREPARE CALCULATOR FOR CALCULATING
 		Calculator.SetPrederterminedInfo();
-		System.out.println(" READY. CALLING.. ");
 
-		if (GameWindow.Instance.WhenReady != null) {
-			GameWindow.Instance.WhenReady.run();
-			System.out.println(" RAN ! ");
-		} else System.out.println(" NULL ! ");
+		// CALL FUNCTIONS WHEN ENGINE IS READY
+		if (GameWindow.Instance.WhenReady != null) GameWindow.Instance.WhenReady.run();
 
 		GameObject obj = new GameObject() {
 			@Override
 			public void Update() {
-
+				super.DefaultAnimationUpdate();
 			}
 		};
 		obj.SetModel(new ObjectModel(
 				Geometry.Cuboid(new Vector3(0, 0, 0), new Vector3(5, 5, 5), new Color[] {Color.WHITE})
 		));
 
-		GameObject obj2 = new GameObject() {
-			@Override
-			public void Update() {
-
-			}
-		};
-		obj2.SetModel(new ObjectModel(
-				Geometry.Cuboid(new Vector3(0, 0, 0), new Vector3(5, 5, 5), new Color[] {Color.WHITE})
-		));
-		obj2.Position = new Vector3(8, 0, 0);
+		obj.Animation = new ObjectAnimation(
+			new Keyframe(new Vector3 (0, 0, 0), new Vector2 (0, Math.toRadians(-30)), 400),
+			new Keyframe(new Vector3 (0, 0, 0), new Vector2 (0, Math.toRadians(30)), 400),
+			new Keyframe(new Vector3 (0, 0, 0), new Vector2 (0, Math.toRadians(30)), 400),
+			new Keyframe(new Vector3 (0, 0, 0), new Vector2 (0, Math.toRadians(-30)), 400)
+		);
 
 		World.Objects.add(obj);
-		World.Objects.add(obj2);
 
 		while (true) {
 
@@ -116,10 +113,8 @@ public class Graphics extends Canvas implements KeyListener, MouseListener, Mous
 
 			Render();
 
-			long End = System.currentTimeMillis();
-			LastUpdate = End;
-
-			RenderTotal += End - Start;
+			LastUpdate = System.currentTimeMillis();;
+			RenderTotal += LastUpdate - Start;
 
 			FRAMES++;
 
@@ -152,11 +147,16 @@ public class Graphics extends Canvas implements KeyListener, MouseListener, Mous
 		//Calculated all that is general for this camera position
 		Calculator.SetPrederterminedInfo();
 
+		VECTORS_CALCULATED = 0;
+
 		if (SHOULD_SORT_POLYGONS) {
 
 			Sorted.clear();
+			PROJECTED_VECTOR_CACHE.clear();
 
 			for (int i = 0; i < World.Objects.size(); i++) {
+
+				World.Objects.get(i).Update();
 
 				World.Objects.get(i).UpdateRenderModel();
 				Sorted.addAll(World.Objects.get(i).RenderModel.Polygons);
@@ -165,11 +165,11 @@ public class Graphics extends Canvas implements KeyListener, MouseListener, Mous
 
 			setOrder();
 
-			for (int j = 0; j < Sorted.size(); j++) {
-				g.setColor(Sorted.get(NewOrder[j]).c);
-				g.fillPolygon(Sorted.get(NewOrder[j]).Polygon);
-			}
+		}
 
+		for (int j = 0; j < Sorted.size(); j++) {
+			g.setColor(Sorted.get(NewOrder[j]).c);
+			g.fillPolygon(Sorted.get(NewOrder[j]).Polygon);
 		}
 
 		//draw the cross in the center of the screen
@@ -177,7 +177,7 @@ public class Graphics extends Canvas implements KeyListener, MouseListener, Mous
 
 		//FPS display
 		g.setColor(Color.BLACK);
-		g.drawString(String.format("FPS: %s    RENDER_TIME: %sms    CAM_ROT: (%s, %s)", drawFPS, avgRender, Math.toDegrees(HorLook), VertLook), 40, 40);
+		g.drawString(String.format("FPS: %s    RENDER_TIME: %sms    CAM_ROT: (%s, %s)    VECTORS_CALC: %s", drawFPS, avgRender, Math.toDegrees(HorLook), VertLook, VECTORS_CALCULATED), 40, 40);
 		bs.show();
 
 	}
@@ -206,10 +206,9 @@ public class Graphics extends Canvas implements KeyListener, MouseListener, Mous
 				}
 	}
 		
-	void invisibleMouse()
-	{
+	void invisibleMouse() {
 		 Toolkit toolkit = Toolkit.getDefaultToolkit();
-		 BufferedImage cursorImage = new BufferedImage(1, 1, BufferedImage.TRANSLUCENT); 
+		 BufferedImage cursorImage = new BufferedImage(1, 1, BufferedImage.TRANSLUCENT);
 		 Cursor invisibleCursor = toolkit.createCustomCursor(cursorImage, new Point(0,0), "InvisibleCursor");        
 		 setCursor(invisibleCursor);
 	}
@@ -218,8 +217,8 @@ public class Graphics extends Canvas implements KeyListener, MouseListener, Mous
 		Vector2 p1x = new Vector2(), p2x = new Vector2(32, 0);
 		Vector2 p1z = new Vector2(), p2z = new Vector2(32, 0);
 
-		double[] xrot = Geometry.RotateAround(new Vector2(-HorLook + 3.14, -HorLook + 3.14), new double[]{p2x.x, p2x.y}, new double[]{0, 0});
-		double[] zrot = Geometry.RotateAround(new Vector2(-HorLook - 3.14 / 2, -HorLook - 3.14 / 2), new double[]{p2z.x, p2z.y}, new double[]{0, 0});
+		double[] xrot = Geometry.RotateAround(-HorLook - 3.14, new double[]{p2x.x, p2x.y}, new double[]{0, 0});
+		double[] zrot = Geometry.RotateAround(-HorLook - 3.14 / 2, new double[]{p2z.x, p2z.y}, new double[]{0, 0});
 
 		g.setColor(Color.RED);
 		g.drawLine((int) (xrot[0] + GameWindow.ScreenSize.getWidth() / 2), (int) (xrot[1] + GameWindow.ScreenSize.getHeight() / 2), (int) (p1x.x + GameWindow.ScreenSize.getWidth() / 2), (int) (p1x.y + GameWindow.ScreenSize.getHeight() / 2));
@@ -374,13 +373,11 @@ public class Graphics extends Canvas implements KeyListener, MouseListener, Mous
 	}
 
 	public void mouseWheelMoved(MouseWheelEvent arg0) {
-		if(arg0.getUnitsToScroll()>0)
-		{
+		if(arg0.getUnitsToScroll() > 0) {
 			if(zoom > MinZoom)
 				zoom -= 25 * arg0.getUnitsToScroll();
 		}
-		else
-		{
+		else {
 			if(zoom < MaxZoom)
 				zoom -= 25 * arg0.getUnitsToScroll();
 		}	

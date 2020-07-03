@@ -20,15 +20,14 @@ public class Calculator {
 	{
 		Vector ViewToPoint = new Vector(x - ViewFrom[0], y - ViewFrom[1], z - ViewFrom[2]);
 
-			   t = (P.NV.x*P.P[0] + P.NV.y*P.P[1] +  P.NV.z*P.P[2]
-				 - (P.NV.x*ViewFrom[0] + P.NV.y*ViewFrom[1] + P.NV.z*ViewFrom[2]))
+		t = (P.NV.x*P.P[0] + P.NV.y*P.P[1] +  P.NV.z*P.P[2] - (P.NV.x*ViewFrom[0] + P.NV.y*ViewFrom[1] + P.NV.z*ViewFrom[2]))
 				 / (P.NV.x*ViewToPoint.x + P.NV.y*ViewToPoint.y + P.NV.z*ViewToPoint.z);
 
 		x = ViewFrom[0] + ViewToPoint.x * t;
 		y = ViewFrom[1] + ViewToPoint.y * t;
 		z = ViewFrom[2] + ViewToPoint.z * t;
 		
-		return new double[] {x, y, z};
+		return new double[] { x, y, z };
 	}
 	
 	static double[] getDrawP(double x, double y, double z)

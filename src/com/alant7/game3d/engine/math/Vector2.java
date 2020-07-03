@@ -19,4 +19,15 @@ public class Vector2 {
         return this;
     }
 
+    public Vector2 Subtract (Vector2 V) {
+        this.x -= V.x;
+        this.y -= V.y;
+
+        return this;
+    }
+
+    public Vector2 Copy() {
+        return this;
+    }
+
 }
