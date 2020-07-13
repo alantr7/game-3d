@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="j3d">
+    <CLASSES>
+      <root url="file://$USER_HOME$/Desktop/j3d" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$USER_HOME$/Desktop/j3d" recursive="false" />
+  </library>
+</component>

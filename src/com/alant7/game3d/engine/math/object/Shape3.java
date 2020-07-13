@@ -2,21 +2,22 @@ package com.alant7.game3d.engine.math.object;
 
 import com.alant7.game3d.engine.framework.GameWindow;
 import com.alant7.game3d.engine.framework.Graphics;
+import com.alant7.game3d.engine.world.Camera;
 import com.alant7.game3d.engine.math.Calculator;
 import com.alant7.game3d.engine.math.Vector3;
 
-import java.awt.Color;
+import java.awt.*;
 
 public class Shape3 {
 
-	public Color c;
+	public java.awt.Color p;
 	public Vector3[] Point;
 	public double[] CalcPos, newX, newY;
 	public Shape2 DrawablePolygon;
 	
-	public Shape3(Vector3[] Point, Color c) {
+	public Shape3(Vector3[] Point, java.awt.Color p) {
 		this.Point = Point;
-		this.c = c;
+		this.p = p;
 	}
 
 	public Shape2 Project() {
@@ -24,6 +25,9 @@ public class Shape3 {
 		newY = new double[Point.length];
 
 		boolean Visible = true;
+
+		double MinX = 0, MaxX = 0;
+		double MinY = 0, MaxY = 0;
 
 		for(int i = 0; i < Point.length; i++) {
 
@@ -39,13 +43,25 @@ public class Shape3 {
 				newX[i] = p[0];
 				newY[i] = p[1];
 
+				if (p[0] < MinX) MinX = p[0];
+				if (p[1] < MinY) MinY = p[1];
+
+				if (p[0] > MaxX) MaxX = p[0];
+				if (p[1] > MaxY) MaxY = p[1];
+
 				continue;
 
 			}
 
-			CalcPos = Calculator.CalculatePositionP(Graphics.ViewFrom, Graphics.ViewTo, Point[i].z, Point[i].x, Point[i].y);
-			newX[i] = (GameWindow.ScreenSize.getWidth()/2 - Calculator.CalcFocusPos[0]) + CalcPos[0] * Graphics.zoom;
-			newY[i] = (GameWindow.ScreenSize.getHeight()/2 - Calculator.CalcFocusPos[1]) + CalcPos[1] * Graphics.zoom;
+			CalcPos = Calculator.CalculatePositionP(Camera.ViewFrom, Camera.ViewTo, Point[i].z, Point[i].x, Point[i].y);
+			newX[i] = (GameWindow.Instance.Graphics.getWidth()/2 - Calculator.CalcFocusPos[0]) + CalcPos[0] * Camera.zoom;
+			newY[i] = (GameWindow.Instance.Graphics.getHeight()/2 - Calculator.CalcFocusPos[1]) + CalcPos[1] * Camera.zoom;
+
+			if (newX[i] < MinX) MinX = newX[i];
+			if (newY[i] < MinY) MinY = newY[i];
+
+			if (newX[i] > MaxX) MaxX = newX[i];
+			if (newY[i] > MaxY) MaxY = newY[i];
 
 			Graphics.VECTORS_CALCULATED++;
 
@@ -62,7 +78,14 @@ public class Shape3 {
 
 		}
 
-		DrawablePolygon = new Shape2(newX, newY, c, GetDist());
+		/*if (
+				MinX > GameWindow.Instance.Graphics.getWidth()
+				|| MaxX < 0
+				|| MinY > GameWindow.Instance.Graphics.getHeight()
+				|| MaxY < 0
+		) Visible = false;*/
+
+		DrawablePolygon = new Shape2(newX, newY, p, GetDist());
 		if (!Visible) DrawablePolygon.Visible = false;
 
 		return DrawablePolygon;
@@ -76,9 +99,9 @@ public class Shape3 {
 	}
 	
 	public double GetDistanceToP(int i) {
-		return Math.sqrt((Graphics.ViewFrom[0] - Point[i].z) * (Graphics.ViewFrom[0] - Point[i].z) +
-						 (Graphics.ViewFrom[1] - Point[i].x) * (Graphics.ViewFrom[1] - Point[i].x) +
-						 (Graphics.ViewFrom[2] - Point[i].y) * (Graphics.ViewFrom[2] - Point[i].y));
+		return Math.sqrt((Camera.ViewFrom[0] - Point[i].z) * (Camera.ViewFrom[0] - Point[i].z) +
+						 (Camera.ViewFrom[1] - Point[i].x) * (Camera.ViewFrom[1] - Point[i].x) +
+						 (Camera.ViewFrom[2] - Point[i].y) * (Camera.ViewFrom[2] - Point[i].y));
 	}
 
 }

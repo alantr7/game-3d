@@ -27,4 +27,9 @@ public class Vector {
 				x * V.y - y * V.x);
 	}
 
+	@Override
+	public String toString() {
+		return String.format("(%s, %s, %s)", x, z, y);
+	}
+
 }

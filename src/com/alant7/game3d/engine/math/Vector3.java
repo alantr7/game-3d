@@ -1,8 +1,12 @@
 package com.alant7.game3d.engine.math;
 
+import com.alant7.game3d.engine.world.Camera;
+
 public class Vector3 {
 
     public double x, y, z;
+
+    public static Vector3 Zero = new Vector3(0, 0, 0);
 
     public Vector3 (double x, double y, double z) {
         this.x = x;
@@ -73,6 +77,10 @@ public class Vector3 {
             return false;
 
         return true;
+    }
+
+    public static double[] Project (Vector3 V) {
+        return Calculator.CalculatePositionP(Camera.ViewFrom, Camera.ViewTo, V.x, V.y, V.z);
     }
 
     public String toString() {

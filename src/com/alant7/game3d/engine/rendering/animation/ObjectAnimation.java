@@ -1,6 +1,5 @@
-package com.alant7.game3d.engine.rendering;
+package com.alant7.game3d.engine.rendering.animation;
 
-import com.alant7.game3d.engine.math.Vector2;
 import com.alant7.game3d.engine.math.Vector3;
 import com.alant7.game3d.engine.world.GameObject;
 
@@ -12,8 +11,9 @@ public class ObjectAnimation {
     public ArrayList<Keyframe> Keyframes = new ArrayList<>();
 
     public int CurrentFrameIndex = 0;
+    public boolean Loop = false, Completed = false;
 
-    public Vector2 TotalRotation = new Vector2();
+    public Vector3 TotalRotation = new Vector3();
 
     public Keyframe CurrentFrame() {
         return Keyframes.get(CurrentFrameIndex);
@@ -27,23 +27,16 @@ public class ObjectAnimation {
     public void NextFrame() {
 
         CurrentFrameIndex++;
-        if (CurrentFrameIndex >= Keyframes.size()) CurrentFrameIndex = 0;
+        if (CurrentFrameIndex >= Keyframes.size()) {
+            CurrentFrameIndex = 0;
+            Completed = true;
+        }
 
         CurrentFrame().StartTime = System.currentTimeMillis();
 
     }
 
-    public Keyframe GetPreviousFrame() {
-        int FrameIndex = CurrentFrameIndex - 1;
-        if (FrameIndex < 0) FrameIndex = Keyframes.size() - 1;
-
-        if (FrameIndex < 0) return CurrentFrame();
-
-        return Keyframes.get(FrameIndex);
-    }
-
-    public void Update(GameObject Object) {
-
+    public void Update() {
         long Time = System.currentTimeMillis();
         if (Time - CurrentFrame().StartTime >= CurrentFrame().Duration) {
 
@@ -55,15 +48,27 @@ public class ObjectAnimation {
         }
     }
 
-    public Vector2 GetCurrentRotation() {
+    public Vector3 GetCurrentRotation() {
 
         Keyframe cf = CurrentFrame();
-        System.out.println (String.format("ROTATION | X Increase: %s, Y Increase: %s, Rotation.x: %s, Rotation.y: %s, Duration: %s", cf.xrotinc, cf.yrotinc, cf.Rotation.x, cf.Rotation.y, cf.Duration));
+        double  x = cf.xrotinc * (System.currentTimeMillis() - cf.StartTime) + TotalRotation.x,
+                y = cf.yrotinc * (System.currentTimeMillis() - cf.StartTime) + TotalRotation.y,
+                z = cf.zrotinc * (System.currentTimeMillis() - cf.StartTime) + TotalRotation.z;
 
-        double  x = cf.xrotinc * (System.currentTimeMillis() - cf.StartTime),
-                y = cf.yrotinc * (System.currentTimeMillis() - cf.StartTime) + TotalRotation.y;
+        return new Vector3 (x, y, z);
 
-        return new Vector2 (x, y);
+    }
+
+    public void Restart() {
+
+        TotalRotation.x = 0;
+        TotalRotation.y = 0;
+        TotalRotation.z = 0;
+
+        CurrentFrameIndex = 0;
+        Completed = false;
+
+        if (Keyframes.size() > 0) Keyframes.get(0).StartTime = System.currentTimeMillis();
 
     }
 

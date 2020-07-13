@@ -30,4 +30,9 @@ public class Vector2 {
         return this;
     }
 
+    @Override
+    public String toString() {
+        return String.format("(%s, %s)", x, y);
+    }
+
 }
